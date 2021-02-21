@@ -21,9 +21,10 @@ namespace CallGate.Repositories
         public IEnumerable<Channel> GetAllByNameAndGroupIdConnectedWithUserId(Guid groupId, Guid userId, string channelName)
         {
             return DbSet
-                .Where(channel => (channel.GroupId == groupId) && ContainsWhenNotEmpty(channel.Name, channelName))
                 .Include(c => c.ChannelUsers)
                 .ThenInclude(cu => cu.User)
+                .ToList() //TODO remove
+                .Where(channel => (channel.GroupId == groupId) && ContainsWhenNotEmpty(channel.Name, channelName))
                 .Where(c => c.ChannelUsers.Any(cu => cu.UserId == userId))
                 .ToList();
         }

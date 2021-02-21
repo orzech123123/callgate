@@ -57,6 +57,7 @@ namespace CallGate.Repositories
         public IEnumerable<User> GetAllUsersByGroupIdAndUsername(Guid groupId, string username)
         {
             return DbSet
+                .ToList() //TODO remove
                 .Where(u => ContainsWhenNotEmpty(u.Username, username))
                 .SelectMany(gu => gu.GroupUsers)
                 .Where(gu => gu.GroupId == groupId)
@@ -125,6 +126,7 @@ namespace CallGate.Repositories
         public IEnumerable<User> GetAllByGroupIdExceptEnumerableAndUserId(Guid groupId, IEnumerable<User> exceptUsers, Guid userId)
         {
             return DbSet
+                .ToList() //TODO remove
                 .SelectMany(gu => gu.GroupUsers)
                 .Where(gu => gu.GroupId == groupId)
                 .Select(gu => gu.User)

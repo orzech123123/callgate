@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
+using CallGate.ApiModels.Channel;
 using CallGate.ApiModels.ChannelMessage;
 using CallGate.ApiModels.Chat;
 using CallGate.ApiModels.ChatMessage;
+using CallGate.ApiModels.Group;
 using CallGate.ApiModels.User;
 using CallGate.Documents;
 using ChatUser = CallGate.Models.ChatUser;
@@ -36,6 +38,12 @@ namespace CallGate.Services
             CreateMap<ChannelMessage, ChannelMessageResponse>()
                 .ForMember(cmr => cmr.UserId, option => option.MapFrom(cm => cm.UserId))
                 .ForMember(cmr => cmr.Username, option => option.MapFrom(cm => cm.Username));
+
+            CreateMap<CallGate.Models.User, UserFullResponse>();
+            CreateMap<CallGate.Models.User, UserResponse>();
+            CreateMap<CallGate.Models.Group, GroupResponse>();
+            CreateMap<CallGate.Models.Channel, ChannelResponse>();
+            CreateMap<CallGate.Documents.Message, ChatMessage>();
         }
     }
 }

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.SpaServices.Webpack;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using CallGate.Data;
@@ -15,21 +14,22 @@ using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using AutoMapper;
 using CallGate.Filters;
 using CallGate.Services.Email;
 using CallGate.Services.Helper;
 using CallGate.Services.Seed;
 using CallGate.Services.Socket;
+using Microsoft.AspNetCore.SpaServices.Webpack;
+using Microsoft.Extensions.Hosting;
 
 namespace CallGate
 {
     public class Startup
     {
         private IConfiguration Configuration { get; }
-        private IHostingEnvironment Env { get; set; }
+        private IWebHostEnvironment Env { get; set; }
         
-        public Startup(IConfiguration configuration, IHostingEnvironment env)
+        public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
             Configuration = configuration;
             Env = env;
@@ -39,9 +39,10 @@ namespace CallGate
         {
             RegisterServices(services);
 
-            IMvcBuilder mvc = services.AddMvc(options =>
+            IMvcBuilder mvc = services.AddControllersWithViews(options =>
             {
                 options.Filters.Add(typeof(ApiExceptionFilter));
+                options.EnableEndpointRouting = false;
             });
             
             IndentJsonForDevelopment(mvc);
@@ -54,7 +55,7 @@ namespace CallGate
         private void RegisterServices(IServiceCollection services)
         {
             services.AddDbContext<DatabaseContext>(options => options.UseSqlServer(Configuration.GetConnectionString("CallGateConnectionString")));
-            services.AddAutoMapper();
+            services.AddAutoMapper(typeof(Startup));
             services.AddTransient(typeof(IRepository<>), typeof(Repository<>));
             DependencyInjectionRegisterer.RegisterAssemblies(services);
 
@@ -85,7 +86,7 @@ namespace CallGate
         {
             if(Env.IsDevelopment())
             {
-                mvc.AddJsonOptions(jsonFormat => jsonFormat.SerializerSettings.Formatting = Formatting.Indented);
+                mvc.AddNewtonsoftJson(jsonFormat => jsonFormat.SerializerSettings.Formatting = Formatting.Indented);
             }
         }
 
@@ -122,17 +123,30 @@ namespace CallGate
             app.UseWebSockets(socketOptions.GetOptions());
             app.Use(async (context, next) => await socketMiddleware.Invoke(context, next));
 
-            app.UseMvc(routes =>
-            {
-                routes.MapRoute(
-                    name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
+            //app.UseMvc(routes =>
+            //{
+            //    routes.MapRoute(
+            //        name: "default",
+            //        template: "{controller=Home}/{action=Index}/{id?}");
 
-                routes.MapSpaFallbackRoute(
-                    name: "spa-fallback",
-                    defaults: new { controller = "Home", action = "Index" });
+            //    routes.MapSpaFallbackRoute(
+            //        name: "spa-fallback",
+            //        defaults: new { controller = "Home", action = "Index" });
+            //});
+
+            app.UseRouting();
+
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllerRoute(
+                    name: "Default",
+                    pattern: "{controller=default}/{action=Index}/{id?}");
+
+                endpoints.MapFallbackToController("Index", "Home");
             });
-            
+
             rethinkDbManager.EnsureDatabaseCreated();
             databaseManager.EnsureDatabaseCreated();
 
